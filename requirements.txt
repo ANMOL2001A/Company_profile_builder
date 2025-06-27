@@ -1,0 +1,6 @@
+googlesearch-python
+requests
+beautifulsoup4
+playwright
+pydantic 
+pydantic-settings
