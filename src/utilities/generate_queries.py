@@ -4,6 +4,7 @@ import json
 from configrations.env import env
 
 client = Groq(api_key=env.groq_api_key.get_secret_value())
+
 examples = [
     {
         "person": "Anmol Sharma",
@@ -58,7 +59,6 @@ example_prompt = PromptTemplate(
         "Person: {person}\n"
         "Company: {company}\n"
         "Queries:\n{queries}"
-
     )
 )
 
@@ -77,8 +77,7 @@ prompt = FewShotPromptTemplate(
     example_separator="\n---\n"
 )
 
-
-def generate_and_save_queries(company_name, person_name, output_file):
+def generate_queries(company_name, person_name, output_file=None):
     prompt_text = prompt.format(
         person=person_name.strip(),
         company=company_name.strip()
@@ -107,16 +106,28 @@ def generate_and_save_queries(company_name, person_name, output_file):
         if line.strip():
             cleaned = line.strip("- ").strip()
             queries.append(cleaned)
-    print(queries)
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(queries, f, indent=2, ensure_ascii=False)
 
-    print(f"Saved {len(queries)} queries to {output_file}")
+    print("\nGenerated queries:")
+    for q in queries:
+        print(f"- {q}")
+
+    if output_file:
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(queries, f, indent=2, ensure_ascii=False)
+        print(f"\nSaved {len(queries)} queries to {output_file}")
+    else:
+        print("\nNo output file specified; skipping saving.")
+
     return queries
 
 if __name__ == "__main__":
-    generate_and_save_queries(
+    generate_queries(
         company_name="Cynoteck",
         person_name="Anmol Sharma",
         output_file="queries.json"
     )
+    
+    # generate_and_save_queries(
+    #     company_name="Cynoteck",
+    #     person_name="Anmol Sharma"
+    # )

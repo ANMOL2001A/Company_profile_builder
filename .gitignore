@@ -3,3 +3,4 @@ config/
 logs/
 queries.json
 results.json
+extracted_pages/

@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import argparse
 from get_urls import collect_all_urls
 from extract_text_from_url import (
     clean_filename,
@@ -11,18 +12,16 @@ from extract_text_from_url import (
 )
 
 
-def main():
-    company = "Cynoteck Technology Solutions"
-    person = "Anmol Sharma"
+def main(company, person):
     urls = collect_all_urls(company, person)
 
     with open("results.json", "w") as f:
         json.dump(list(urls), f, indent=2)
 
-    os.makedirs("extracted_pages", exist_ok=True)
+    os.makedirs("extracted_pages", exist_ok=True)####
 
     for idx, url in enumerate(urls):
-        print(f"\n[{idx+1}/{len(urls)}] Processing: {url}")
+        print(f"\n[{idx + 1}/{len(urls)}] Processing: {url}")
 
         if "linkedin.com" in url:
             text = extract_linkedin_profile(
@@ -30,7 +29,7 @@ def main():
                 email=LINKEDIN_EMAIL,
                 password=LINKEDIN_PASSWORD,
                 expected_name=person,
-                expected_company="Cynoteck"
+                expected_company=company
             )
         else:
             text = extract_text(url)
@@ -47,4 +46,19 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Extract URLs and content for a person and company.")
+    parser.add_argument(
+        "--company",
+        type=str,
+        required=True,
+        help="Company name (e.g., 'Cynoteck Technology Solutions')"
+    )
+    parser.add_argument(
+        "--person",
+        type=str,
+        required=True,
+        help="Person name (e.g., 'Anmol Sharma')"
+    )
+    args = parser.parse_args()
+
+    main(company=args.company, person=args.person)

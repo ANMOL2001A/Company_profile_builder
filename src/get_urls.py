@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import time
 import json
 from configrations.env import env
-
+from utilities.generate_queries import generate_queries
 SCRAPERAPI_KEY = env.scraperapi_key.get_secret_value()
 
 
@@ -33,40 +33,8 @@ def get_google_results(query, num_results=3):
 
     return urls
 
-
-def generate_search_queries(company_name, person_name):
-    queries = []
-
-    company = company_name.strip()
-    person = person_name.strip()
-
-    queries.extend([
-        f'"{person}" works at "{company}"',
-        f'"{person}""{company}" profile',
-        f'"{person}""{company}" LinkedIn',
-        f'"{person}""{company}" site:linkedin.com',# shots for prompts to create combinations
-        f'"{person}""{company}" site:crunchbase.com',
-        f'"{person}""{company}" site:zoominfo.com',
-        f'"{person}" site:linkedin.com/in'
-    ])
-
-    queries.extend([
-        f'"{company}" profile',
-        f'"{company}" overview',
-        f'"{company}" revenue investors team',
-        f'"{company}" financials',
-        f'"{company}" employee strength history',
-        f'"{company}" site:linkedin.com',
-        f'"{company}" site:crunchbase.com',
-        f'"{company}" site:salesintel.io',
-        f'"{company}" site:zoominfo.com'
-    ])
-
-    return queries
-
-
 def collect_all_urls(company, person):
-    queries = generate_search_queries(company, person)
+    queries = generate_queries(company, person)
     all_results = set()
 
     for query in queries:
