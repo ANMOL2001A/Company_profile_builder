@@ -11,7 +11,6 @@ class Settings(BaseSettings):
     linkedin_email: str
     linkedin_password: SecretStr
     scraperapi_key: SecretStr
-
-
-
+    groq_api_key: SecretStr
+    model: str
 env = Settings()

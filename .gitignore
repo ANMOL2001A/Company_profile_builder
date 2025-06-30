@@ -1,1 +1,5 @@
 .venv/
+config/
+logs/
+queries.json
+results.json
