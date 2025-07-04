@@ -10,13 +10,13 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            //"args": [
-               // "--company",
-                //"Cynoteck Technology Solutions",
-                //"--person",
-                //"Anmol Sharma"
-            //]
-            "args": "${command:pickArgs}"
+            "args": [
+               "--company",
+                "Cynoteck Technology Solutions",
+                "--person",
+                "Anmol Sharma"
+            ]
+            //"args": "${command:pickArgs}"
 
         }
     ]

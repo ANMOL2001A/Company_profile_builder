@@ -21,9 +21,6 @@ def get_google_results(query: str, num_results: int = 3) -> Set[str]:
 
     Returns:
         Set[str]: A set of result URLs.
-
-    Raises:
-        RuntimeError: If the HTTP request fails or the response is invalid.
     """
     urls: Set[str] = set()
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -60,8 +57,6 @@ def collect_all_urls(company: str, person: str) -> Set[str]:
     Returns:
         Set[str]: All collected unique URLs.
 
-    Raises:
-        RuntimeError: If query generation or scraping fails.
     """
     try:
         queries: List[str] = generate_queries(company, person)

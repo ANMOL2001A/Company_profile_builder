@@ -81,4 +81,4 @@ output_file = "company_profiles.json"
 with open(output_file, "w", encoding="utf-8") as f:
     json.dump(results, f, indent=2, ensure_ascii=False)
 
-print(f"\n✅ Extraction complete. Results saved to: {output_file}")
+print(f"\nExtraction complete. Results saved to: {output_file}")

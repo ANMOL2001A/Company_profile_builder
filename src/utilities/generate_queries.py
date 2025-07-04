@@ -84,6 +84,7 @@ prompt = FewShotPromptTemplate(
     example_separator="\n---\n"
 )
 
+
 def generate_queries(company_name, person_name, temperature=TemperatureLevel.LEVEL_0_3):
     prompt_text = prompt.format(
         person=person_name.strip(),

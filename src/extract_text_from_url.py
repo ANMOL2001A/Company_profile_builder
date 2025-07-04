@@ -3,20 +3,27 @@ from bs4 import BeautifulSoup
 import json
 import re
 import os
+from typing import Optional
 from playwright.sync_api import sync_playwright
 from configrations.env import env
 
 os.makedirs("extracted_pages", exist_ok=True)
 
-LINKEDIN_EMAIL = env.linkedin_email
-LINKEDIN_PASSWORD = env.linkedin_password.get_secret_value()
+LINKEDIN_EMAIL: str = env.linkedin_email
+LINKEDIN_PASSWORD: str = env.linkedin_password.get_secret_value()
 
 
-def clean_filename(url):
+def clean_filename(url: str) -> str:
+    """
+    Make a safe filename from a URL.
+    """
     return re.sub(r'\W+', '_', url)[:100] + ".txt"
 
 
-def extract_text(url):
+def extract_text(url: str) -> Optional[str]:
+    """
+    Download a web page and return plain text.
+    """
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
         response = requests.get(url, headers=headers, timeout=10)
@@ -26,20 +33,29 @@ def extract_text(url):
             tag.decompose()
         return soup.get_text(separator="\n", strip=True)
     except Exception as e:
-        print(f"Failed to fetch {url} {e}")
+        print(f"Failed to fetch {url}: {e}")
         return None
 
 
-def extract_linkedin_profile(linkedin_url, email, password, expected_name, expected_company):
+def extract_linkedin_profile(
+    linkedin_url: str,
+    email: str,
+    password: str,
+    expected_name: str,
+    expected_company: str
+) -> Optional[str]:
+    """
+    Login to LinkedIn, open a profile URL, and return text if it matches the expected name and company.
+    """
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
 
             if os.path.exists("linkedin_login.json"):
-                print(" Reusing saved LinkedIn session...")
+                print("Reusing saved LinkedIn session...")
                 context = browser.new_context(storage_state="linkedin_login.json")
             else:
-                print(" Logging into LinkedIn for the first time...")
+                print("Logging into LinkedIn for the first time...")
                 context = browser.new_context()
                 page = context.new_page()
                 page.goto("https://www.linkedin.com/login", timeout=60000)
@@ -53,31 +69,47 @@ def extract_linkedin_profile(linkedin_url, email, password, expected_name, expec
             page.goto(linkedin_url, timeout=60000)
             page.wait_for_timeout(5000)
 
-            is_person_block = page.locator("css=div[class*='cPrITgaUqRHXqEsstahTboQvkrmcrpcPI']").first.is_visible()
-            is_company_block = page.locator("css=div[class*='gVdBChdagDTvwibYzgGnzhyGoypqvEALJwNf'][class*='inline-show-more-text--is-collapsed']").first.is_visible()
+            is_person_block = False
+            is_company_block = False
 
+            is_person_block = page.locator(
+                "css=div[class*='cPrITgaUqRHXqEsstahTboQvkrmcrpcPI']"
+            ).first.is_visible()
+
+            is_company_block = page.locator(
+                "css=div[class*='gVdBChdagDTvwibYzgGnzhyGoypqvEALJwNf'][class*='inline-show-more-text--is-collapsed']"
+            ).first.is_visible()
+        
             if is_person_block and is_company_block:
                 print("Detected: Person profile")
                 name_text = ""
                 company_text = ""
                 try:
-                    name_block = page.locator("css=div[class*='cPrITgaUqRHXqEsstahTboQvkrmcrpcPI']").first
+                    name_block = page.locator(
+                        "css=div[class*='cPrITgaUqRHXqEsstahTboQvkrmcrpcPI']"
+                    ).first
                     name_text = name_block.inner_text(timeout=3000).strip()
-                except:
-                    print(" Name block not found")
+                except Exception:
+                    print("Name block not found")
 
                 try:
-                    company_block = page.locator("css=div[class*='gVdBChdagDTvwibYzgGnzhyGoypqvEALJwNf'][class*='inline-show-more-text--is-collapsed']").first
+                    company_block = page.locator(
+                        "css=div[class*='gVdBChdagDTvwibYzgGnzhyGoypqvEALJwNf'][class*='inline-show-more-text--is-collapsed']"
+                    ).first
                     company_text = company_block.inner_text(timeout=3000).strip()
-                except:
+                except Exception:
                     print("Company block not found")
 
-                if expected_name.lower() in name_text.lower() and expected_company.lower() in company_text.lower():
+                if (
+                    expected_name.lower() in name_text.lower()
+                    and expected_company.lower() in company_text.lower()
+                ):
                     return f"{name_text}\n\n{company_text}"
                 else:
-                    print(f"Skipping: name/company mismatch.\n  Found Name: {name_text}\n  Found Company: {company_text}")
+                    print(
+                        f"Skipping: name/company mismatch.\n  Found Name: {name_text}\n  Found Company: {company_text}"
+                    )
                     return None
-
             else:
                 print("Detected: Company profile — extracting full content")
                 html = page.content()
@@ -87,12 +119,20 @@ def extract_linkedin_profile(linkedin_url, email, password, expected_name, expec
                 return soup.get_text(separator="\n", strip=True)
 
     except Exception as e:
-        print(f"LinkedIn fetch failed — {e}")
+        print(f"LinkedIn fetch failed: {e}")
         return None
 
-def process_urls_from_json(json_file):
-    with open(json_file, "r") as f:
-        urls = json.load(f)
+
+def process_urls_from_json(json_file: str) -> None:
+    """
+    Read URLs from a JSON file and extract text for each URL.
+    """
+    try:
+        with open(json_file, "r") as f:
+            urls = json.load(f)
+    except Exception as e:
+        print(f"Error reading {json_file}: {e}")
+        return
 
     for idx, url in enumerate(urls):
         print(f"\n[{idx+1}/{len(urls)}] Processing: {url}")
@@ -110,9 +150,12 @@ def process_urls_from_json(json_file):
 
         if text:
             filename = clean_filename(url)
-            with open(os.path.join("extracted_pages", filename), "w", encoding="utf-8") as out_file:
-                out_file.write(text)
-            print(f"Saved to: extracted_pages/{filename}")
+            try:
+                with open(os.path.join("extracted_pages", filename), "w", encoding="utf-8") as out_file:
+                    out_file.write(text)
+                print(f"Saved to: extracted_pages/{filename}")
+            except Exception as e:
+                print(f"Error saving file {filename}: {e}")
         else:
             print("No content extracted.")
 
