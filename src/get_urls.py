@@ -1,47 +1,31 @@
-import os
-import requests
-from bs4 import BeautifulSoup
 import time
 import json
 from typing import Set, List
 
-from configrations.env import env
+from duckduckgo_search import DDGS
 from utilities.generate_queries import generate_queries
 
-SCRAPERAPI_KEY = env.scraperapi_key.get_secret_value()
 
-
-def get_google_results(query: str, num_results: int = 3) -> Set[str]:
+def get_duckduckgo_results(query: str, num_results: int = 3) -> Set[str]:
     """
-    Fetches Google search result URLs for a query via ScraperAPI.
+    Fetches DuckDuckGo search result URLs for a query.
 
     Args:
         query (str): Search query.
-        num_results (int): Number of results to fetch per query.
+        num_results (int): Number of results to fetch.
 
     Returns:
         Set[str]: A set of result URLs.
     """
     urls: Set[str] = set()
-    headers = {"User-Agent": "Mozilla/5.0"}
 
-    url = f"https://www.google.com/search?q={query}&num={num_results}&hl=en"
-    scraperapi_url = f"http://api.scraperapi.com?api_key={SCRAPERAPI_KEY}&url={url}"
-
-    try:
-        response = requests.get(scraperapi_url, headers=headers, timeout=15)
-        response.raise_for_status()
-    except Exception as e:
-        raise RuntimeError(f"Failed to fetch Google results for query '{query}': {e}")
-
-    try:
-        soup = BeautifulSoup(response.text, "html.parser")
-        for g in soup.find_all("div", class_="yuRUbf"):
-            link = g.find("a")
-            if link and link.get("href"):
-                urls.add(link["href"])
-    except Exception as e:
-        raise RuntimeError(f"Error parsing HTML response for query '{query}': {e}")
+    with DDGS() as ddgs:
+        for r in ddgs.text(query):
+            href = r.get("href")
+            if href:
+                urls.add(href)
+            if len(urls) >= num_results:
+                break
 
     return urls
 
@@ -71,7 +55,7 @@ def collect_all_urls(company: str, person: str) -> Set[str]:
     for query in queries:
         print(f"\nSearching: {query}")
         try:
-            results = get_google_results(query)
+            results = get_duckduckgo_results(query)
         except RuntimeError as e:
             print(f"Skipping query due to error: {e}")
             continue
@@ -82,7 +66,7 @@ def collect_all_urls(company: str, person: str) -> Set[str]:
             print(url)
             all_results.add(url)
 
-        time.sleep(2)
+        time.sleep(5)
 
     if not all_results:
         raise RuntimeError("No URLs collected after processing all queries.")
